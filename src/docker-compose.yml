@@ -1,0 +1,58 @@
+version: '3'
+
+services:
+  spark-master:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    command: bin/spark-class org.apache.spark.deploy.master.Master
+    container_name: spark-master
+    ports:
+      - "9090:8080"
+      - "7077:7077"
+    volumes:
+      - ./jobs:/opt/bitnami/spark/jobs
+      - ./input:/opt/bitnami/spark/input
+      - ./output:/opt/bitnami/spark/output
+      - ./requirements.txt:/requirements.txt
+    networks:
+      - code-with-yu
+
+  spark-worker: &worker
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    depends_on:
+      - spark-master
+    volumes:
+      - ./jobs:/opt/bitnami/spark/jobs
+      - ./input:/opt/bitnami/spark/input
+      - ./output:/opt/bitnami/spark/output
+      - ./requirements.txt:/requirements.txt
+    environment:
+      SPARK_MODE: worker
+      SPARK_WORKER_CORES: 2
+      SPARK_WORKER_MEMORY: 1g
+      SPARK_MASTER_URL: spark://spark-master:7077
+    networks:
+      - code-with-yu
+
+  spark-worker-1:
+    <<: *worker
+    container_name: spark-worker-1
+
+  spark-worker-2:
+    <<: *worker
+    container_name: spark-worker-2
+
+  spark-worker-3:
+    <<: *worker
+    container_name: spark-worker-3
+
+  spark-worker-4:
+    <<: *worker
+    container_name: spark-worker-4
+
+networks:
+  code-with-yu:
